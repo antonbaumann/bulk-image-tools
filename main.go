@@ -55,8 +55,9 @@ func main() {
 				Usage:   "Rotate all images by `rotation`",
 			},
 			&cli.IntFlag{
-				Name:  "workers",
-				Usage: "number of workers used",
+				Name:        "workers",
+				Usage:       "number of workers used",
+				DefaultText: "4",
 			},
 		},
 		Action: func(c *cli.Context) error {
