@@ -11,6 +11,10 @@ const (
 	Rotate270 ImageRotation = 270
 )
 
+func (r ImageRotation) IsValid() bool {
+	return r == Rotate0 || r == Rotate90 || r == Rotate180 || r == Rotate270
+}
+
 func (r ImageRotation) ToBimgAngle() bimg.Angle {
 	return bimg.Angle(r)
 }
