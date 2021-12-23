@@ -22,13 +22,14 @@ const (
 	Rotate270 ImageRotation = 270
 )
 
+// listAllFiles returns a list of all files in the given directory and its subdirectories
 func listAllFiles(root string) ([]string, error) {
 	fileList := make([]string, 0)
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if d.Type().IsRegular() {
 			relPath, err := filepath.Rel(root, path)
 			if err != nil {
-				return err
+				return fmt.Errorf("failed to list files: %v", err)
 			}
 			fileList = append(fileList, relPath)
 		}
@@ -37,6 +38,7 @@ func listAllFiles(root string) ([]string, error) {
 	return fileList, err
 }
 
+// createTasks creates transformation tasks from images in the given directory
 func createTasks(
 	pathFrom string,
 	pathTo string,
@@ -47,10 +49,10 @@ func createTasks(
 ) ([]Task, error) {
 	files, err := listAllFiles(pathFrom)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create tasks: %v", err)
 	}
 
-	tasks := make([]Task, 0)
+	tasks := make([]Task, 0, len(files))
 	for _, file := range files {
 		tasks = append(tasks, Task{
 			RootFrom: pathFrom,
@@ -65,24 +67,19 @@ func createTasks(
 	return tasks, nil
 }
 
+// worker processes tasks in the `tasks` channel and reports the results
 func worker(tasks <-chan Task, results chan<- Result) {
 	for task := range tasks {
-		if err := task.Run(); err != nil {
-			results <- Result{
-				Success:  false,
-				FilePath: filepath.Join(task.RootFrom, task.RelPath),
-				Error:    err,
-			}
-		} else {
-			results <- Result{
-				Success:  true,
-				FilePath: filepath.Join(task.RootFrom, task.RelPath),
-				Error:    nil,
-			}
+		err := task.Run()
+		results <- Result{
+			Success:  err == nil,
+			FilePath: filepath.Join(task.RootFrom, task.RelPath),
+			Error:    err,
 		}
 	}
 }
 
+// RunTransformations runs the transformations in parallel
 func RunTransformations(
 	pathFrom string,
 	pathTo string,
@@ -101,21 +98,25 @@ func RunTransformations(
 		rotation,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to run transformations: %v", err)
 	}
 
+	// Create channels to send tasks to workers and receive results from workers
 	tasks := make(chan Task, len(taskList))
 	results := make(chan Result, len(taskList))
 
+	// start workers
 	for i := 0; i < nrWorkers; i++ {
 		go worker(tasks, results)
 	}
 
+	// send tasks
 	for _, task := range taskList {
 		tasks <- task
 	}
 	close(tasks)
 
+	// receive results and track progress
 	progress := NewProgress(len(taskList))
 	for i := 0; i < len(taskList); i++ {
 		result := <-results
