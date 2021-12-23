@@ -8,22 +8,25 @@ import (
 	"strings"
 )
 
+// Task describes a image transformation
 type Task struct {
-	RootFrom string
-	RootTo   string
-	RelPath  string
-	Format   ImageFormat
-	Width    int
-	Height   int
-	Rotation ImageRotation
+	RootFrom string        // Root directory to read from
+	RootTo   string        // Root directory to write to
+	RelPath  string        // Relative path to the image
+	Format   ImageFormat   // Format to convert to
+	Width    int           // Width of the resulting image
+	Height   int           // Height of the resulting image
+	Rotation ImageRotation // Rotation of the resulting image
 }
 
+// Result describes the result of a task
 type Result struct {
-	Success  bool
-	FilePath string
-	Error    error
+	Success  bool   // Whether the task was successful
+	FilePath string // Path to the resulting image
+	Error    error  // Error message if the task failed
 }
 
+// createPathIfNotExist creates all necessary directories for the given path
 func createPathIfNotExist(path string) error {
 	dir := filepath.Dir(path)
 	if _, err := os.Stat(dir); err != nil {
@@ -36,11 +39,13 @@ func createPathIfNotExist(path string) error {
 	return nil
 }
 
+// trimExtension removes the extension from the given path
 func trimExtension(path string) string {
 	suffix := filepath.Ext(path)
 	return strings.TrimSuffix(path, suffix)
 }
 
+// resize the given image to the given width and height
 func resize(buffer []byte, width, height int) ([]byte, error) {
 	if width > 0 || height > 0 {
 		return bimg.NewImage(buffer).Resize(width, height)
@@ -48,10 +53,12 @@ func resize(buffer []byte, width, height int) ([]byte, error) {
 	return buffer, nil
 }
 
+// rotate the given image by the given rotation
 func rotate(buffer []byte, rotation ImageRotation) ([]byte, error) {
 	return bimg.NewImage(buffer).Rotate(rotation.ToBimgAngle())
 }
 
+// save the given image to the given path
 func save(buffer []byte, rootTo, relPath string, format ImageFormat) error {
 	imagePathNoExt := trimExtension(filepath.Join(rootTo, relPath))
 	if err := createPathIfNotExist(imagePathNoExt); err != nil {
@@ -67,6 +74,7 @@ func save(buffer []byte, rootTo, relPath string, format ImageFormat) error {
 	return bimg.Write(imagePath, convertedBuffer)
 }
 
+// Run executes the given task
 func (t Task) Run() error {
 	absPath := filepath.Join(t.RootFrom, t.RelPath)
 	buffer, err := bimg.Read(absPath)
