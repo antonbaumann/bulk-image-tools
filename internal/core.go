@@ -2,24 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"github.com/h2non/bimg"
 	"io/fs"
 	"path/filepath"
-)
-
-type ImageFormat string
-
-const (
-	JPEG ImageFormat = "jpeg"
-	PNG  ImageFormat = "png"
-)
-
-type ImageRotation int
-
-const (
-	Rotate0   ImageRotation = 0
-	Rotate90  ImageRotation = 90
-	Rotate180 ImageRotation = 180
-	Rotate270 ImageRotation = 270
 )
 
 // listAllFiles returns a list of all files in the given directory and its subdirectories
@@ -89,6 +74,8 @@ func RunTransformations(
 	rotation ImageRotation,
 	nrWorkers int,
 ) error {
+	bimg.Initialize()
+
 	taskList, err := createTasks(
 		pathFrom,
 		pathTo,
