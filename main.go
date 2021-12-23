@@ -8,10 +8,6 @@ import (
 	"os"
 )
 
-func isValidFormat(s string) bool {
-	return s == string(internal.JPEG) || s == string(internal.PNG)
-}
-
 func isValidRotation(r int) bool {
 	return r == int(internal.Rotate0) ||
 		r == int(internal.Rotate90) ||
@@ -63,22 +59,20 @@ func main() {
 		Action: func(c *cli.Context) error {
 			var format internal.ImageFormat
 			if c.IsSet("format") {
-				formatStr := c.String("format")
-				if !isValidFormat(formatStr) {
+				format = internal.ImageFormat(c.String("format"))
+				if !format.IsValid() {
 					return fmt.Errorf("%v is not a valid format", format)
 				}
-				format = internal.ImageFormat(formatStr)
 			} else {
 				format = internal.JPEG
 			}
 
 			var rotation internal.ImageRotation
 			if c.IsSet("rotation") {
-				rotationInt := c.Int("rotation")
-				if !isValidRotation(rotationInt) {
-					return fmt.Errorf("%vdeg is not a valid rotation", rotationInt)
+				rotation = internal.ImageRotation(c.Int("rotation"))
+				if !rotation.IsValid() {
+					return fmt.Errorf("%vdeg is not a valid rotation", rotation)
 				}
-				rotation = internal.ImageRotation(rotationInt)
 			} else {
 				rotation = internal.Rotate0
 			}
